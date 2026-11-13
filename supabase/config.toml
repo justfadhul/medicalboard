@@ -2,6 +2,8 @@ project_id = "umb-case-system"
 
 [db]
 major_version = 15
+port = 54422
+shadow_port = 54420
 
 [db.seed]
 enabled = true

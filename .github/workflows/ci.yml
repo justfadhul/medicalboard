@@ -46,6 +46,7 @@ jobs:
       - uses: supabase/setup-cli@v1
         with: { version: latest }
       - run: npm ci
+      - run: sudo systemctl stop postgresql || true
       - name: Start local Supabase (applies migrations and seed)
         run: supabase start -x studio,imgproxy,inbucket,vector,logflare,supavisor
       - name: Export Supabase keys
