@@ -21,7 +21,9 @@ const QR_DRAWING = (rid: string, emu = 720000) => `<w:r><w:drawing><wp:inline di
 export function letterheadXml(withRef = true): string {
   const small = (t: string) => para(run(t, { size: 8 }), { jc: "left", after: 0 });
   const right = (t: string) => para(run(t, { size: 8 }), { jc: "right", after: 0 });
-  const coat = table([[para(run("Coat of Arms", { size: 7 }), { jc: "center", after: 0 })]], [1100], true);
+  const coat = table([[para(run("Coat of Arms", { size: 7 }), { jc: "center", after: 0 })]], [1100], true)
+    .replace("<w:tr>", '<w:tr><w:trPr><w:trHeight w:val="1050" w:hRule="exact"/><w:jc w:val="center"/></w:trPr>')
+    .replace("<w:tblLayout", '<w:jc w:val="center"/><w:tblLayout');
   return table([[
     ["Telephone: General Lines: 340874/231563/9", "Permanent Secretary's Office: 340872", "Fax: 231584", "E-mail: ps@health.go.ug", "Website: www.health.go.ug"].map(small).join(""),
     `${coat}${para(run("THE REPUBLIC OF UGANDA", { b: true, size: 9 }), { jc: "center", after: 0 })}`,
