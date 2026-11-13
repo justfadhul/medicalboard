@@ -1,0 +1,47 @@
+{
+  "name": "umb-case-system",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:sql": "bash supabase/tests/run-local.sh",
+    "e2e": "playwright test --trace off",
+    "bootstrap:admin": "node --experimental-strip-types scripts/bootstrap-admin.ts",
+    "templates": "node --experimental-strip-types scripts/make-templates.ts"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog": "^1.3.1",
+    "@radix-ui/react-dropdown-menu": "^2.2.1",
+    "@radix-ui/react-tabs": "^1.2.1",
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.0",
+    "@zxing/browser": "^0.2.1",
+    "@zxing/library": "^0.23.0",
+    "docxtemplater": "^3.71.1",
+    "jsbarcode": "^3.12.3",
+    "next": "^16.4.6",
+    "pdf-lib": "^1.17.1",
+    "pizzip": "^3.3.0",
+    "qrcode": "^1.5.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.65.0",
+    "@tailwindcss/postcss": "^4.3.5",
+    "@types/node": "^26.6.6",
+    "@types/qrcode": "^1.5.6",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "otplib": "^13.6.0",
+    "postcss": "^8.5.32",
+    "tailwindcss": "^4.3.5",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.0"
+  }
+}
