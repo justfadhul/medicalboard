@@ -8,9 +8,8 @@ export type CapturedPage = { id: string; blob: Blob; url: string; width: number;
 
 const MAX_SIDE = 2200;
 
+// JPEG keeps every page embeddable in the combined PDF (pdf-lib reads JPEG and PNG).
 async function toBlob(c: HTMLCanvasElement): Promise<Blob> {
-  const webp = await new Promise<Blob | null>((r) => c.toBlob(r, "image/webp", 0.8));
-  if (webp && webp.type === "image/webp") return webp;
   return (await new Promise<Blob | null>((r) => c.toBlob(r, "image/jpeg", 0.82)))!;
 }
 

@@ -66,7 +66,7 @@ export function ScanDialog({ open, onClose, caseId, caseNo, caseName, doc, docs,
     try {
       await enqueue(pages.map((p) => ({
         caseId, documentId: batch ? assign[p.id]! : doc!.id, blob: p.blob, width: p.width, height: p.height, score: p.quality.score,
-        quality: { ...p.quality }, keepReason: p.keepReason || null, ext: p.blob.type === "image/webp" ? "webp" : "jpg",
+        quality: { ...p.quality }, keepReason: p.keepReason || null, ext: "jpg",
       })));
       setPages([]); setAssign({});
       router.refresh();

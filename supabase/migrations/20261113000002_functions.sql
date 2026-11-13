@@ -645,7 +645,7 @@ begin
   s := public.next_open_sitting();
   perform pg_advisory_xact_lock(hashtext(s.id::text));
   select coalesce(max(agenda_serial), 0) + 1 into v_serial from public.cases where sitting_id = s.id;
-  update public.cases set sitting_id = s.id, agenda_serial = v_serial where id = p_case;
+  update public.cases set sitting_id = s.id, agenda_serial = v_serial, decision = null, minute_no = null, decided_at = null where id = p_case;
   perform public.set_stage(p_case, 'ready');
   perform public.log_event(p_case, 'stage', 'Marked ready for the Board; on the agenda of ' || to_char(s.sitting_date, 'FMDay FMDD FMMonth YYYY') || ' as S/N ' || v_serial);
   perform public.queue_sms(p_case, 'agenda', 'UMB: Case ' || c.case_no || ' is on the agenda of the Medical Board sitting on '
@@ -684,10 +684,8 @@ begin
     'agenda_serial', c.agenda_serial, 'decision', c.decision, 'minute_no', c.minute_no, 'decided_at', c.decided_at);
   v_minute := public.minute_number(s.sitting_date, c.agenda_serial);
   v_next := case p_decision when 'approved' then 'decided' when 'deferred' then 'review' else 'closed' end;
-  update public.cases set decision = p_decision, minute_no = v_minute, decided_at = now(),
-    sitting_id = case when p_decision = 'deferred' then null else sitting_id end,
-    agenda_serial = case when p_decision = 'deferred' then null else agenda_serial end
-  where id = p_case;
+  -- A deferred case keeps its minute at this sitting (for the minutes) and gets a new agenda slot when marked ready again.
+  update public.cases set decision = p_decision, minute_no = v_minute, decided_at = now() where id = p_case;
   perform public.set_stage(p_case, v_next);
   perform public.queue_sms(p_case, 'decision', 'UMB: The Medical Board has considered case ' || c.case_no
     || '. Please contact the Medical Board Registry, Ministry of Health, for the outcome.');

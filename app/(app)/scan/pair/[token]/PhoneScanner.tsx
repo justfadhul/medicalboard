@@ -49,7 +49,7 @@ export function PhoneScanner({ token }: { token: string }) {
     if (pagesBlocking(pages).length) return setErr("Retake the marked pages or give a reason to keep them.");
     if (!pages.length || !claim || !docId) return;
     await enqueue(pages.map((p) => ({ caseId: claim.case_id, documentId: docId, blob: p.blob, width: p.width, height: p.height, score: p.quality.score,
-      quality: { ...p.quality }, keepReason: p.keepReason || null, ext: p.blob.type === "image/webp" ? "webp" : "jpg" })));
+      quality: { ...p.quality }, keepReason: p.keepReason || null, ext: "jpg" })));
     setSent((s) => s + pages.length); setPages([]);
   }
 
