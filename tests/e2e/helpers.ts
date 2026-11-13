@@ -41,10 +41,15 @@ export async function login(browser: Browser, email: string): Promise<Page> {
   if (error) throw error;
   await page.goto(`/auth/confirm?token_hash=${data.properties.hashed_token}&type=magiclink`);
   await page.waitForURL(/\/mfa/);
+  const logs: string[] = [];
+  page.on("console", (m) => { if (m.type() === "error") logs.push(m.text()); });
   const keyEl = page.locator("code");
-  if (await keyEl.isVisible({ timeout: 8000 }).catch(() => false)) secrets.set(email, (await keyEl.textContent())!.trim());
+  // Either the enrolment key appears (first sign-in) or the verify form for an existing factor.
+  await expect(keyEl.or(page.getByText("Enter the six-digit code from your authenticator app."))).toBeVisible({ timeout: 20_000 })
+    .catch(async () => { throw new Error(`MFA screen did not load. Page: ${(await page.locator("body").innerText()).slice(0, 400)} | console: ${logs.join(" | ").slice(0, 600)}`); });
+  if (await keyEl.isVisible()) secrets.set(email, (await keyEl.textContent())!.trim());
   const secret = secrets.get(email);
-  if (!secret) throw new Error("No TOTP secret for " + email);
+  if (!secret) throw new Error(`No TOTP secret for ${email}. Page: ${(await page.locator("body").innerText()).slice(0, 400)}`);
   // never reuse a code from the same 30-second window
   let code = authenticator.generate(secret);
   while (code === lastCode.get(email)) { await page.waitForTimeout(2000); code = authenticator.generate(secret); }
