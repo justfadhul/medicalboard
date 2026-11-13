@@ -1,12 +1,13 @@
 import type { NextConfig } from "next";
 
 const supabase = process.env.NEXT_PUBLIC_SUPABASE_URL ?? "";
-const wss = supabase.replace(/^https:/, "wss:");
+const wss = supabase.replace(/^http/, "ws"); // https -> wss, http -> ws (local Supabase)
+const dev = process.env.NODE_ENV === "development";
 const bridge = process.env.NEXT_PUBLIC_SCAN_BRIDGE_URL ?? "http://localhost:7317";
 
 const csp = [
   "default-src 'self'",
-  "script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://challenges.cloudflare.com https://cdn.jsdelivr.net",
+  `script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval'${dev ? " 'unsafe-eval'" : ""} https://challenges.cloudflare.com https://cdn.jsdelivr.net`,
   "worker-src 'self' blob:",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
   "font-src 'self' https://fonts.gstatic.com",

@@ -102,7 +102,7 @@ export function CaseView({ b, me, initialTab, officers, appUrl, th }: { b: CaseB
         <div className="row">{actions}</div>
       </div>
       <StageProgress stage={c.stage} />
-      <div style={{ display: "grid", gridTemplateColumns: "minmax(0, 1fr) 300px", gap: 16 }} className="review3">
+      <div style={{ display: "grid", gridTemplateColumns: tab === "review" ? "minmax(0, 1fr)" : "minmax(0, 1fr) 300px", gap: 16 }} className="review3">
         <div className="stack" style={{ gap: 14, minWidth: 0 }}>
           <Tabs label="Case sections" tabs={tabs} value={tab} onChange={setTab} />
           <div role="tabpanel">
