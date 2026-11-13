@@ -1,5 +1,6 @@
 "use client";
 import * as D from "@radix-ui/react-dialog";
+import { cloneElement, isValidElement, useId } from "react";
 import { STAGES, stageMeta, type Stage, type Tone } from "@/lib/domain";
 import { cls } from "@/lib/util";
 
@@ -97,6 +98,10 @@ export function Avatar({ ini }: { ini: string }) {
   return <span className="av" aria-hidden>{ini}</span>;
 }
 
+/** A labelled control. Uses <label for> so the control's accessible name is exactly the label. */
 export function Field({ label, children, style }: { label: string; children: React.ReactNode; style?: React.CSSProperties }) {
-  return <label className="fieldlabel" style={style}>{label}{children}</label>;
+  const id = useId();
+  const child = isValidElement<{ id?: string }>(children) ? cloneElement(children, { id: children.props.id ?? id }) : children;
+  const forId = isValidElement<{ id?: string }>(children) ? (children.props.id ?? id) : undefined;
+  return <div className="fieldlabel" style={style}><label htmlFor={forId}>{label}</label>{child}</div>;
 }
