@@ -60,6 +60,7 @@ export async function drain(): Promise<void> {
       try {
         await uploadOne(next);
         await del(next.id); done++; lastError = undefined;
+        window.dispatchEvent(new CustomEvent("umb-scan-uploaded", { detail: { documentId: next.documentId } }));
         finishedDocs.add(next.documentId);
         if (!(await all()).some((p) => p.documentId === next.documentId)) void assemble(next.documentId);
       } catch (e) {

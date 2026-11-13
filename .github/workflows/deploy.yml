@@ -1,0 +1,34 @@
+name: Deploy
+# Manual: applies migrations to the cloud project, deploys Edge Functions, deploys to Vercel, then smoke-tests the live URL.
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: npm }
+      - uses: supabase/setup-cli@v1
+        with: { version: latest }
+      - run: npm ci
+      - name: Migrations and Edge Functions
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+        run: |
+          supabase link --project-ref "${{ secrets.SUPABASE_PROJECT_REF }}"
+          supabase db push
+          supabase functions deploy sms-dispatch --no-verify-jwt
+          supabase functions deploy ai-read
+      - name: Vercel
+        env: { VERCEL_TOKEN: "${{ secrets.VERCEL_TOKEN }}", VERCEL_ORG_ID: "${{ secrets.VERCEL_ORG_ID }}", VERCEL_PROJECT_ID: "${{ secrets.VERCEL_PROJECT_ID }}" }
+        run: |
+          npx vercel pull --yes --environment=production --token "$VERCEL_TOKEN"
+          npx vercel build --prod --token "$VERCEL_TOKEN"
+          npx vercel deploy --prebuilt --prod --token "$VERCEL_TOKEN" > url.txt
+          echo "URL=$(cat url.txt)" >> $GITHUB_ENV
+      - name: Smoke test
+        run: bash scripts/smoke.sh "${{ vars.APP_URL || env.URL }}"

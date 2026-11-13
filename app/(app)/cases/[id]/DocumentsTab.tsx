@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 import JsBarcode from "jsbarcode";
 import { CADRE_LABEL, longDate, type Cadre } from "@/lib/domain";
 import type { Me } from "@/lib/data";
@@ -25,6 +26,14 @@ export function DocumentsTab({ b, me }: { b: CaseBundle; me: Me }) {
   const [slip, setSlip] = useState(false);
   const [cover, setCover] = useState(false);
   const [add, setAdd] = useState({ name: "", scope: "" as Cadre | "" });
+  const router = useRouter();
+  // Refresh as each queued page finishes uploading (camera, phone or scanner).
+  useEffect(() => {
+    let t: ReturnType<typeof setTimeout>;
+    const on = () => { clearTimeout(t); t = setTimeout(() => router.refresh(), 400); };
+    window.addEventListener("umb-scan-uploaded", on);
+    return () => { window.removeEventListener("umb-scan-uploaded", on); clearTimeout(t); };
+  }, [router]);
 
   const received = docs.filter((d) => d.status === "received");
   const scanned = received.filter((d) => d.document_pages.length > 0).length;
