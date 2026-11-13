@@ -64,7 +64,7 @@ async function secretariatToSigned(page: Page, id: string, name: string) {
   await page.goto(`/sitting?id=${c!.sitting_id}`);
   if (await page.getByRole("button", { name: "Sitting held: enter decisions" }).isVisible()) await page.getByRole("button", { name: "Sitting held: enter decisions" }).click();
   const row = page.getByRole("row").filter({ hasText: name });
-  await row.getByRole("button", { name: "Approve" }).click();
+  await row.getByRole("button", { name: "Approve", exact: true }).click();
   await expect.poll(() => stageOf(id)).toBe("decided");
   const { data: m } = await admin.from("cases").select("minute_no").eq("id", id).single();
   expect(m!.minute_no).toMatch(/^MB\/\d{2}\/\d{4}\/Min04\(\d+\)$/);
