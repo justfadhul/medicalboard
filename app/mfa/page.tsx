@@ -8,6 +8,7 @@ type Enroll = { factorId: string; qr: string; secret: string };
 export default function Mfa() {
   const sb = supabaseBrowser();
   const [factorId, setFactorId] = useState<string | null>(null);
+  const [mode, setMode] = useState<"loading" | "enroll" | "verify">("loading");
   const [enroll, setEnroll] = useState<Enroll | null>(null);
   const [code, setCode] = useState("");
   const [err, setErr] = useState("");
@@ -19,12 +20,13 @@ export default function Mfa() {
       if (aal?.currentLevel === "aal2") return go();
       const { data } = await sb.auth.mfa.listFactors();
       const verified = data?.totp?.find((f) => f.status === "verified");
-      if (verified) return setFactorId(verified.id);
+      if (verified) { setFactorId(verified.id); setMode("verify"); return; }
       for (const f of data?.all ?? []) if (f.status === "unverified") await sb.auth.mfa.unenroll({ factorId: f.id });
       const { data: e, error } = await sb.auth.mfa.enroll({ factorType: "totp", friendlyName: "Authenticator " + new Date().toISOString().slice(0, 10) });
       if (error) return setErr(error.message);
       setEnroll({ factorId: e.id, qr: e.totp.qr_code, secret: e.totp.secret });
       setFactorId(e.id);
+      setMode("enroll");
     })();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -43,9 +45,9 @@ export default function Mfa() {
   }
 
   return (
-    <AuthShell title={enroll ? "Set up two-step verification" : "Two-step verification"}
-      sub={enroll ? "Every account uses an authenticator app (Google Authenticator, Microsoft Authenticator or similar). Scan the code, then enter the six digits it shows."
-        : "Enter the six-digit code from your authenticator app."}>
+    <AuthShell title={mode === "enroll" ? "Set up two-step verification" : "Two-step verification"}
+      sub={mode === "enroll" ? "Every account uses an authenticator app (Google Authenticator, Microsoft Authenticator or similar). Scan the code, then enter the six digits it shows."
+        : mode === "verify" ? "Enter the six-digit code from your authenticator app." : "Checking your account…"}>
       {enroll && (
         <div className="stack" style={{ gap: 8, alignItems: "center" }}>
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -53,13 +55,15 @@ export default function Mfa() {
           <p className="muted t12">Can&apos;t scan? Enter this key: <code style={{ userSelect: "all" }}>{enroll.secret}</code></p>
         </div>
       )}
-      <form onSubmit={verify} className="stack" style={{ gap: 12 }}>
+      {mode === "loading" && !err && <p className="muted" role="status">Loading…</p>}
+      {mode === "loading" && err && <p className="err" role="alert">{err}</p>}
+      {mode !== "loading" && <form onSubmit={verify} className="stack" style={{ gap: 12 }}>
         <label className="fieldlabel">Six-digit code
           <input inputMode="numeric" autoComplete="one-time-code" pattern="[0-9 ]{6,7}" required value={code} onChange={(e) => setCode(e.target.value)} />
         </label>
         {err && <p className="err" role="alert">{err}</p>}
         <button className="btn primary" disabled={busy || !factorId}>{busy ? "Checking…" : "Verify"}</button>
-      </form>
+      </form>}
       <form action="/auth/signout" method="post"><button className="btn ghost sm">Sign out</button></form>
     </AuthShell>
   );

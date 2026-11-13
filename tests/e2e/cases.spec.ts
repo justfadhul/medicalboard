@@ -12,18 +12,18 @@ test.beforeAll(async () => {
 async function newCase(page: Page, kind: "retirement" | "referral", name: string) {
   await page.goto("/cases/new");
   await page.getByRole("button", { name: kind === "retirement" ? "Retirement on medical grounds" : "Referral abroad" }).click();
-  await page.getByLabel("Full name").fill(name);
-  await page.getByLabel("Date of birth").fill("1975-04-20");
+  await page.getByLabel("Full name", { exact: true }).fill(name);
+  await page.getByLabel("Date of birth", { exact: true }).fill("1975-04-20");
   await page.getByLabel("Phone for SMS updates").fill("0700123456");
   await page.getByRole("checkbox", { name: /agrees to receive SMS/ }).check();
   if (kind === "retirement") {
-    await page.getByLabel("Employer").selectOption({ label: "Uganda Police Force" });
-    await page.getByLabel("Place of work").fill("Test Station");
+    await page.getByLabel("Employer", { exact: true }).selectOption({ label: "Uganda Police Force" });
+    await page.getByLabel("Place of work", { exact: true }).fill("Test Station");
   } else {
-    await page.getByLabel("Who pays").selectOption("family");
-    await page.getByLabel("Procedure").selectOption({ label: "Cochlear implant" });
-    await page.getByLabel("Country").selectOption("India");
-    await page.getByLabel("Receiving doctor").fill("Dr E2E Receiver");
+    await page.getByLabel("Who pays", { exact: true }).selectOption("family");
+    await page.getByLabel("Procedure", { exact: true }).selectOption({ label: "Cochlear implant" });
+    await page.getByLabel("Country", { exact: true }).selectOption("India");
+    await page.getByLabel("Receiving doctor", { exact: true }).fill("Dr E2E Receiver");
     await page.getByRole("group", { name: "Receipt of Treatment report from an earlier referral" }).getByRole("button", { name: "Not applicable" }).click();
   }
   await page.getByRole("button", { name: "Create case and start scanning" }).click();

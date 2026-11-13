@@ -45,7 +45,7 @@ export async function login(browser: Browser, email: string): Promise<Page> {
   page.on("console", (m) => { if (m.type() === "error") logs.push(m.text()); });
   const keyEl = page.locator("code");
   // Either the enrolment key appears (first sign-in) or the verify form for an existing factor.
-  await expect(keyEl.or(page.getByText("Enter the six-digit code from your authenticator app."))).toBeVisible({ timeout: 20_000 })
+  await expect(keyEl.or(page.getByText("Enter the six-digit code from your authenticator app.", { exact: true }))).toBeVisible({ timeout: 20_000 })
     .catch(async () => { throw new Error(`MFA screen did not load. Page: ${(await page.locator("body").innerText()).slice(0, 400)} | console: ${logs.join(" | ").slice(0, 600)}`); });
   if (await keyEl.isVisible()) secrets.set(email, (await keyEl.textContent())!.trim());
   const secret = secrets.get(email);
