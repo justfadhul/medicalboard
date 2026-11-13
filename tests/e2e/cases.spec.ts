@@ -41,21 +41,21 @@ async function registryIntake(page: Page, kind: "retirement" | "referral", name:
 
 async function secretariatToSigned(page: Page, id: string, name: string) {
   await page.goto(`/cases/${id}?tab=review`);
-  await page.getByLabel("Field").selectOption("name");
+  await page.getByRole("tab", { name: /^Fields/ }).click();
+  await page.getByLabel("Field", { exact: true }).selectOption("name");
   await page.getByLabel("Value as written on the page").fill(name);
   await page.getByRole("button", { name: "Add field" }).click();
-  await page.getByRole("tab", { name: /Fields/ }).click();
   await page.getByRole("button", { name: "Confirm", exact: true }).first().click();
   await expect(page.getByText("Confirmed", { exact: true }).first()).toBeVisible();
   // a finding, copied, then resolved
-  await page.getByRole("tab", { name: /Findings/ }).click();
+  await page.getByRole("tab", { name: /^Findings/ }).click();
   await page.getByLabel("What is missing or wrong").fill("Stamp on the referral is faint");
   await page.getByLabel("Reasoning").fill("Legible enough for the record");
   await page.getByLabel("Effect").selectOption("record");
   await page.getByRole("button", { name: "Save finding" }).click();
   await expect(page.getByText("Stamp on the referral is faint")).toBeVisible();
   // resolve any automatic flags
-  await page.getByRole("tab", { name: /Flags/ }).click();
+  await page.getByRole("tab", { name: /^Flags/ }).click();
   for (const b of await page.getByRole("button", { name: "Mark resolved" }).all()) await b.click();
   await page.getByRole("button", { name: "Mark ready for Board" }).click();
   await expect.poll(() => stageOf(id)).toBe("ready");

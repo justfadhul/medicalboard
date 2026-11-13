@@ -7,7 +7,7 @@ export default defineConfig({
   expect: { timeout: 20_000 },
   fullyParallel: false,
   workers: 1,
-  retries: process.env.CI ? 1 : 0,
+  retries: 0,
   reporter: [["list"], ["html", { open: "never" }]],
   use: {
     baseURL: process.env.E2E_BASE_URL ?? "http://localhost:3000",
@@ -15,6 +15,8 @@ export default defineConfig({
     permissions: ["camera"],
     launchOptions: { args: ["--use-fake-ui-for-media-stream", "--use-fake-device-for-media-stream"] },
     screenshot: "only-on-failure",
+    actionTimeout: 20_000,
+    navigationTimeout: 30_000,
   },
   webServer: process.env.E2E_BASE_URL ? undefined : { command: "npm run start", url: "http://localhost:3000/login", timeout: 120_000, reuseExistingServer: true },
 });
