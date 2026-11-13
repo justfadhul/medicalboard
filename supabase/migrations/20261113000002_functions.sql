@@ -934,7 +934,7 @@ create or replace function public.add_note(p_case uuid, p_body text, p_tag_role 
 returns uuid language plpgsql security definer set search_path = public as $$
 declare v_id uuid;
 begin
-  perform public.require_role('registry', 'secretariat', 'commissioner');
+  perform public.require_role('registry', 'secretariat');  -- the Commissioner is read-only
   if coalesce(trim(p_body), '') = '' then raise exception 'Write the note first'; end if;
   insert into public.notes (case_id, body, tag_role, tag_user, created_by) values (p_case, trim(p_body), p_tag_role, p_tag_user, auth.uid())
   returning id into v_id;

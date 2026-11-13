@@ -1,0 +1,31 @@
+import type { Cadre, CaseType, Funding, LetterKind, Role, Signatory, Stage } from "./domain";
+import type { Criterion } from "./domain";
+
+export type DocPage = { id: string; path: string; page_no: number; rotation: number; width: number | null; height: number | null; quality: { ok?: boolean; issues?: string[] } | null; keep_reason: string | null };
+export type CaseDoc = { id: string; name: string; catalog_key: string | null; source: string; rule_id: string | null; can_na: boolean;
+  status: "received" | "not_brought" | "not_applicable"; reason: string | null; sort: number; pdf_path: string | null; document_pages: DocPage[] };
+export type FieldRow = { id: string; key: string; label: string; value: string; document_id: string | null; page_no: number | null;
+  bbox: { x: number; y: number; w: number; h: number } | null; origin: string; confirmed: boolean };
+export type FlagRow = { id: string; code: string; text: string; resolved: boolean };
+export type FindingRow = { id: string; document_id: string | null; type: "missing_document" | "missing_information" | "mismatch" | "other"; what: string;
+  reasoning: string; effect: "block" | "record"; resolved: boolean; created_at: string; author: { full_name: string; email: string } | null };
+export type LetterFull = { id: string; kind: LetterKind; title: string; addressee: string; addressee_to_confirm: boolean; signer: Signatory; ref_no: string;
+  status: "draft" | "awaiting" | "signed" | "returned"; return_note: string | null; receipt_needed: boolean; receipt_confirmed: boolean;
+  receipt_method: string | null; receipt_by: string | null; receipt_designation: string | null; receipt_at: string | null; verify_code: string;
+  signed_scan_path: string | null; stamped_scan_path: string | null; office_contact: string | null; sent_at: string | null; signed_at: string | null;
+  last_reminder_at: string | null; created_at: string; sort: number };
+export type NoteRow = { id: string; body: string; tag_role: Role | null; tag_user: string | null; created_at: string; author: { full_name: string; email: string; role: Role } | null };
+export type AuditRow = { id: number; actor_label: string | null; action: string; summary: string; created_at: string; reverses: number | null };
+export type CaseFull = {
+  id: string; case_no: string; type: CaseType; name: string; gender: string; dob: string; stated_age: number | null; phone: string | null; sms_consent: boolean;
+  employer_id: number | null; employer: { name: string; cadre: Cadre | null } | null; station: string | null; funding: Funding | null; funding_body: string | null;
+  procedure: string | null; country: string | null; diagnosis: string | null; referring_doctor: string | null; receiving_doctor: string | null;
+  receiving_centre: string | null; cost_figures: string | null; cost_words: string | null; duration: string | null; accompanying: string | null;
+  earlier_referral: boolean; stage: Stage; stage_entered_at: string; hold: boolean; hold_reason: string | null; decision: string | null; minute_no: string | null;
+  agenda_serial: number | null; sitting: { id: string; sitting_date: string; venue: string; held: boolean } | null; created_at: string;
+  returned_on: string | null; report_due: string | null; report_received_at: string | null;
+  collections: { collector_name: string; relationship: string; collected_at: string; reversed: boolean }[];
+};
+export type CaseBundle = { c: CaseFull; docs: CaseDoc[]; fields: FieldRow[]; flags: FlagRow[]; findings: FindingRow[]; letters: LetterFull[];
+  notes: NoteRow[]; audit: AuditRow[]; criteria: Criterion[]; users: { id: string; full_name: string; email: string; role: Role }[];
+  rules: Record<string, string>; aiEnabled: boolean };
