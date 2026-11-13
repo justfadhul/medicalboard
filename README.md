@@ -65,8 +65,8 @@ Local emails (invites, sign-in links) appear in Inbucket at http://localhost:543
 
 ## Supabase project setup (cloud)
 
-1. Create the project in **Frankfurt (eu-central-1)** (see DATA_PROTECTION §1). Enable the `pg_cron` and `pg_net` extensions (Database → Extensions).
-2. Link and push the schema (never edit tables in the dashboard):
+1. Create the project in an EU region (the live project is **Ireland, eu-west-1**; see DATA_PROTECTION §1). Enable the `pg_cron` and `pg_net` extensions (Database → Extensions).
+2. Push the schema (never edit tables in the dashboard). With the database password use the CLI; with only an access token use `SUPABASE_ACCESS_TOKEN=… SUPABASE_PROJECT_REF=… node scripts/apply-migrations.mjs` (Management API, records the same migration history):
    ```bash
    supabase link --project-ref <ref>
    ```
@@ -88,11 +88,12 @@ Local emails (invites, sign-in links) appear in Inbucket at http://localhost:543
    ```bash
    supabase secrets set CRON_SECRET=<random> SMS_PROVIDER=mock APP_ORIGIN=https://<app>
    ```
-6. Schedule the SMS dispatcher every minute (SQL editor; replace the values):
+6. Schedule the SMS dispatcher every minute, keeping the secret in Vault (SQL editor; replace the values):
    ```sql
+   select vault.create_secret('<CRON_SECRET>', 'umb_cron_secret');
    select cron.schedule('umb-sms', '* * * * *', $$
      select net.http_post(url := 'https://<ref>.supabase.co/functions/v1/sms-dispatch',
-       headers := jsonb_build_object('Authorization', 'Bearer <CRON_SECRET>'))
+       headers := jsonb_build_object('Authorization', 'Bearer ' || (select decrypted_secret from vault.decrypted_secrets where name = 'umb_cron_secret')))
    $$);
    ```
    Re-run `supabase db push` after enabling `pg_cron` so the retention and sittings jobs are scheduled (or run the `do $$ … cron.schedule …` block from `20261113000003_rls.sql`).
@@ -100,7 +101,7 @@ Local emails (invites, sign-in links) appear in Inbucket at http://localhost:543
 
 ## Deploy (Vercel)
 
-Import the GitHub repository in Vercel, set the environment variables above (Production), and deploy; `vercel.json` pins functions to `fra1` next to the database. Or run the **Deploy** GitHub Action (`.github/workflows/deploy.yml`) with secrets `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`; it pushes migrations, deploys functions and the app, then runs `scripts/smoke.sh` against the live URL.
+Import the GitHub repository in Vercel, set the environment variables above (Production), and deploy; `vercel.json` pins functions to `dub1`, next to the database in Ireland. Or run the **Deploy** GitHub Action (`.github/workflows/deploy.yml`) with secrets `SUPABASE_ACCESS_TOKEN`, `SUPABASE_DB_PASSWORD`, `SUPABASE_PROJECT_REF`, `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`; it pushes migrations, deploys functions and the app, then runs `scripts/smoke.sh` against the live URL.
 
 ## Scanning
 

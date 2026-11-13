@@ -1,7 +1,7 @@
 project_id = "umb-case-system"
 
 [db]
-major_version = 15
+major_version = 17
 port = 54422
 shadow_port = 54420
 
@@ -21,7 +21,6 @@ enable_signup = false
 jwt_expiry = 3600
 
 [auth.email]
-enable_signup = false
 double_confirm_changes = true
 enable_confirmations = true
 otp_expiry = 3600

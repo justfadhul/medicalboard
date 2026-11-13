@@ -8,8 +8,8 @@ Health status and medical records are **special personal data** under Uganda's *
 
 | Service | Nearest region offered | Chosen | Why |
 |---|---|---|---|
-| Supabase (database, auth, file storage, Edge Functions) | No African region is offered (Americas, Europe, Asia Pacific only). Closest by network path from Kampala: Frankfurt `eu-central-1`, London `eu-west-2`, Mumbai `ap-south-1`. | **Frankfurt (`eu-central-1`)** | Shortest typical latency from East Africa over the submarine cables landing in Mombasa; EU GDPR jurisdiction is the strongest argument for "adequate protection" under DPPA s.19. |
-| Vercel (web app and server functions) | Cape Town `cpt1` exists, but functions should run next to the database. | **Frankfurt `fra1`** (`vercel.json`) | Every page reads the database; running in `cpt1` would add a Cape Town ↔ Frankfurt round trip to each query. Static assets are served from Vercel's edge everywhere regardless. |
+| Supabase (database, auth, file storage, Edge Functions) | No African region is offered (Americas, Europe, Asia Pacific only). Closest by network path from Kampala: Frankfurt `eu-central-1`, London `eu-west-2`, Mumbai `ap-south-1`. | **Ireland (`eu-west-1`)**: the project as created | EU GDPR jurisdiction is the strongest argument for "adequate protection" under DPPA s.19. Frankfurt (`eu-central-1`) has slightly shorter typical latency from Kampala; either is acceptable, and a move is a dump/restore (see §7). |
+| Vercel (web app and server functions) | Cape Town `cpt1` exists, but functions should run next to the database. | **Dublin `dub1`** (`vercel.json`) | Every page reads the database; running in `cpt1` would add a Cape Town ↔ Ireland round trip to each query. Static assets are served from Vercel's edge everywhere regardless. |
 
 Check the region list again when creating the project (Supabase: *New project → Region*). If Supabase adds an African region, move to it (see §7).
 
@@ -17,9 +17,9 @@ Check the region list again when creating the project (Supabase: *New project �
 
 | Data | Where it goes | Notes |
 |---|---|---|
-| Everything in the database: case particulars, diagnosis, documents checklist, findings, letters, audit log | Supabase, Frankfurt | Encrypted at rest (AES-256) and in transit (TLS). |
-| Scanned pages and signed/stamped letter scans | Supabase Storage (private buckets `scans`, `letters`), Frankfurt | No public buckets; served only through signed URLs valid 2–5 minutes, after RLS checks. |
-| Rendered pages (HTML) and generated documents in transit | Vercel `fra1` functions | Not stored by Vercel; logs contain URLs and IDs, not case contents. |
+| Everything in the database: case particulars, diagnosis, documents checklist, findings, letters, audit log | Supabase, Ireland | Encrypted at rest (AES-256) and in transit (TLS). |
+| Scanned pages and signed/stamped letter scans | Supabase Storage (private buckets `scans`, `letters`), Ireland | No public buckets; served only through signed URLs valid 2–5 minutes, after RLS checks. |
+| Rendered pages (HTML) and generated documents in transit | Vercel `dub1` functions | Not stored by Vercel; logs contain URLs and IDs, not case contents. |
 | SMS text and the phone number | SMS provider (Africa's Talking, Nairobi/Kenya) and the Ugandan mobile network | Messages never contain a diagnosis or decision; consent is recorded at intake and checked before every message. Collection codes are stored only as bcrypt hashes. |
 | Page images of one document (only if AI reading is switched on) | Anthropic API (USA) | **Off by default.** Requires `AI_READING_ENABLED=true` on the server *and* the admin recording the Ministry's approval in Settings. Sends only the pages of the document requested; results are unconfirmed until a person confirms them; every call is logged (`ai_calls`). |
 | Receipt confirmations from receiving offices | Public `/verify/<code>` page | Shows only letter title, addressee office and date. No patient name, diagnosis or case content. Rate limited and protected by Cloudflare Turnstile (Cloudflare sees the visitor's IP). |
