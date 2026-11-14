@@ -48,7 +48,12 @@ jobs:
       - run: npm ci
       - run: sudo systemctl stop postgresql || true
       - name: Start local Supabase (applies migrations and seed)
-        run: supabase start -x studio,imgproxy,inbucket,vector,logflare,supavisor
+        run: |
+          for i in 1 2 3; do
+            supabase start -x studio,imgproxy,inbucket,vector,logflare,supavisor && exit 0
+            echo "Start attempt $i failed; retrying"; supabase stop --no-backup || true; sleep 10
+          done
+          exit 1
       - name: Export Supabase keys
         run: |
           supabase status -o env > .sb.env
