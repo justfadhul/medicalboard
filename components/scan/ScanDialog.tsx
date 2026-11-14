@@ -193,7 +193,10 @@ function BridgeSource({ onPages }: { onPages: (p: CapturedPage[]) => void }) {
       setState("ready");
       const [s, f] = await Promise.all([fetch(`${base}/scanners`, { headers: h }).then((x) => x.json()), fetch(`${base}/drop`, { headers: h }).then((x) => x.json())]);
       setScanners(s.scanners ?? []); setScanner((s.scanners ?? [])[0]?.id ?? ""); setFiles(f.files ?? []);
-    } catch (e) { setState("offline"); setErr((e as Error).message); }
+    } catch (e) {
+      setState("offline");
+      setErr(e instanceof TypeError ? `The scan bridge is not running on this computer (${base}). Start it, then press Connect.` : (e as Error).message);
+    }
   }
   useEffect(() => { void check(); }, [token]); // eslint-disable-line react-hooks/exhaustive-deps
   async function scan() {
