@@ -16,7 +16,7 @@ Web application for the **Uganda Medical Board Secretariat** (Ministry of Health
 
 Roles live in `profiles.role` and are enforced in Postgres (`public.my_role()` / `has_role()`, RLS and `security definer` functions).
 
-**Sign-in:** an emailed link. Two-step verification (TOTP authenticator app) is an admin setting, **Require two-step verification** (`mfa_required`), currently **off**. When on, the database only grants a role to an MFA-verified (`aal2`) session and users are sent to the authenticator screen. Turn it on before real patient data is loaded.
+**Sign-in:** email and password, with no emails sent. An admin adds the person (Users and roles, or `npm run bootstrap:users`); the person opens the login page, chooses **First time? Create your password**, and signs in with it from then on. Only accounts an admin set up, and that have no password yet, can create one (rate limited). Forgotten password: an admin presses **Reset password** and the person creates a new one. Until someone has created their password, anyone who knows their email could create it first, so new users should do it straight away; the Users page shows who has. Two-step verification (TOTP authenticator app) is an admin setting, **Require two-step verification** (`mfa_required`), currently **off**. When on, the database only grants a role to an MFA-verified (`aal2`) session and users are sent to the authenticator screen. Turn it on before real patient data is loaded.
 
 ## Workflow
 
@@ -107,7 +107,7 @@ Local emails (invites, sign-in links) appear in Inbucket at http://localhost:543
    ```bash
    npm run bootstrap:users
    ```
-   It is safe to re-run: existing users keep their accounts and get the listed role. Add `-- --invite` to email invitations to new users; without it they sign in from the login page.
+   It is safe to re-run: existing users keep their accounts and get the listed role. No email is sent; each person creates their password on the login page.
 
 ## Deploy (Vercel)
 

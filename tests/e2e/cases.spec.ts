@@ -146,6 +146,22 @@ test("referral case (family funded): intake to closed", async ({ browser }) => {
   expect(count).toBeGreaterThanOrEqual(5);
 });
 
+test("a new user creates their own password, then signs in with it (no email)", async ({ page }) => {
+  const email = `e2e-new-${RUN}@umb.test`;
+  const { data } = await admin.auth.admin.createUser({ email, email_confirm: true });
+  await admin.from("profiles").upsert({ id: data.user!.id, email, role: "commissioner", active: true });
+  await page.goto("/login");
+  await page.getByRole("button", { name: "First time? Create your password" }).click();
+  await page.getByLabel("Work email").fill(email);
+  await page.getByLabel("New password (at least 10 characters)").fill("Kampala-2026-pass");
+  await page.getByLabel("Type the password again").fill("Kampala-2026-pass");
+  await page.getByRole("button", { name: "Create password and sign in" }).click();
+  await page.waitForURL(/\/pipeline/);
+  // A second attempt to "create" the password for the same account is refused
+  const r = await page.request.post("/api/auth/create-password", { data: { email, password: "Another-pass-123" } });
+  expect(r.status()).toBe(400);
+});
+
 test("public verify page rejects unknown codes and shows nothing else", async ({ page }) => {
   await page.goto("/verify/000000000000000000000000");
   await expect(page.getByText(/does not match any letter/)).toBeVisible();

@@ -14,6 +14,7 @@ function totp(secret: string, t = Date.now()): string {
 export const authenticator = { generate: totp };
 
 export const admin = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!, { auth: { persistSession: false } });
+export const E2E_PASSWORD = "e2e-Password-123";
 const secrets = new Map<string, string>();
 const lastCode = new Map<string, string>();
 
@@ -25,7 +26,8 @@ export async function ensureUser(email: string, role: string, name: string) {
     if (r.error) throw r.error;
     id = r.data.user.id;
   }
-  await admin.from("profiles").upsert({ id, email, full_name: name, role, active: true });
+  await admin.auth.admin.updateUserById(id, { password: E2E_PASSWORD });
+  await admin.from("profiles").upsert({ id, email, full_name: name, role, active: true, password_set: true });
   // fresh MFA factor each run
   const f = await admin.auth.admin.mfa.listFactors({ userId: id });
   for (const x of f.data?.factors ?? []) await admin.auth.admin.mfa.deleteFactor({ userId: id, id: x.id });
@@ -37,10 +39,11 @@ export async function ensureUser(email: string, role: string, name: string) {
 export async function login(browser: Browser, email: string): Promise<Page> {
   const ctx = await browser.newContext({ permissions: ["camera"] });
   const page = await ctx.newPage();
-  const { data, error } = await admin.auth.admin.generateLink({ type: "magiclink", email });
-  if (error) throw error;
-  await page.goto(`/auth/confirm?token_hash=${data.properties.hashed_token}&type=magiclink`);
-  await page.waitForURL((u) => !u.pathname.startsWith("/auth/"));
+  await page.goto("/login");
+  await page.getByLabel("Work email").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(E2E_PASSWORD);
+  await page.getByRole("button", { name: "Sign in", exact: true }).click();
+  await page.waitForURL((u) => !u.pathname.startsWith("/login"));
   if (!page.url().includes("/mfa")) return page; // two-step verification switched off
   const logs: string[] = [];
   page.on("console", (m) => { if (m.type() === "error") logs.push(m.text()); });

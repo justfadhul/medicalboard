@@ -1,5 +1,6 @@
 // Idempotently creates the first admin from BOOTSTRAP_ADMIN_EMAIL / BOOTSTRAP_ADMIN_NAME.
-// Sends an invite link (never a password). Re-running only re-asserts the admin role.
+// Creates the account without sending email; the admin then chooses "First time? Create your password" on the login page.
+// Re-running only re-asserts the admin role.
 // Usage: NEXT_PUBLIC_SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… BOOTSTRAP_ADMIN_EMAIL=… BOOTSTRAP_ADMIN_NAME=… npm run bootstrap:admin
 import { createClient } from "@supabase/supabase-js";
 
@@ -17,13 +18,13 @@ for (let page = 1; !userId; page++) {
   if (data.users.length < 200) break;
 }
 if (!userId) {
-  const { data, error } = await sb.auth.admin.inviteUserByEmail(email, { data: { full_name: name }, redirectTo: `${site}/auth/callback` });
+  const { data, error } = await sb.auth.admin.createUser({ email, email_confirm: true, user_metadata: { full_name: name } });
   if (error) throw error;
   userId = data.user.id;
-  console.log(`Invitation sent to ${email}.`);
+  console.log(`Created ${email}. They create their password on ${site}/login ("First time? Create your password").`);
 } else console.log(`${email} already exists; making sure it is an active admin.`);
 
 const { error } = await sb.from("profiles").upsert({ id: userId, email, full_name: name, role: "admin", active: true }, { onConflict: "id" });
 if (error) throw error;
 await sb.from("audit_log").insert({ actor_label: "bootstrap script", action: "user_role", summary: `Bootstrap admin: ${email}` });
-console.log("Done. The admin signs in from the emailed link and sets up two-step verification.");
+console.log("Done.");

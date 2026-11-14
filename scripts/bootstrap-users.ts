@@ -1,7 +1,8 @@
 // Idempotently creates (or updates) the system's users and roles from a JSON list.
 // The real list lives in scripts/users.local.json (git-ignored: it holds staff emails). See scripts/users.example.json.
 // Usage: NEXT_PUBLIC_SUPABASE_URL=… SUPABASE_SERVICE_ROLE_KEY=… npm run bootstrap:users [-- --invite]
-//   --invite  also emails an invitation to users who are new (otherwise they sign in from the login page).
+// No email is sent: new users open the login page and choose "First time? Create your password".
+//   --invite  (optional) emails Supabase invitations instead.
 import fs from "node:fs";
 import { createClient } from "@supabase/supabase-js";
 
