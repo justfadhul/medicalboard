@@ -132,10 +132,23 @@ function PreviewDialog({ doc, caseName, onClose, canEdit }: { doc: CaseDoc; case
     const j = await r.json(); if (j.url) window.open(j.url, "_blank", "noopener");
   }
   const cur = doc.document_pages[page - 1];
+  const removeFiles = (paths: string[]) => paths.length && supabaseBrowser().storage.from("scans").remove(paths);
+  async function deleteOne() {
+    if (!cur || !window.confirm(`Delete page ${page} of ${doc.name}?`)) return;
+    const path = await run<string>("delete_page", { p_page: cur.id }, "Page deleted");
+    if (path) { await removeFiles([path]); onClose(); }
+  }
+  async function deleteAll() {
+    const n = doc.document_pages.length;
+    if (!window.confirm(`Delete all ${n} scanned pages of ${doc.name}? This cannot be undone; you will need to scan the document again.`)) return;
+    const paths = await run<string[]>("delete_all_pages", { p_doc: doc.id }, `All ${n} pages deleted. Scan the document again.`);
+    if (paths) { await removeFiles(paths); onClose(); }
+  }
   return (
     <Modal open onClose={onClose} title={doc.name} sub={`${caseName} · ${doc.document_pages.length} page(s)`} width={900}
       footer={<>
-        {canEdit && cur && <button className="btn danger" onClick={async () => { if (await run("delete_page", { p_page: cur.id }, "Page deleted")) onClose(); }}>Delete this page</button>}
+        {canEdit && cur && <button className="btn danger" onClick={deleteOne}>Delete this page</button>}
+        {canEdit && doc.document_pages.length > 1 && <button className="btn danger" onClick={deleteAll}>Delete all {doc.document_pages.length} pages</button>}
         <button className="btn" onClick={pdf}>Open combined PDF</button>
       </>}>
       <Viewer title={doc.name} pages={doc.document_pages} page={page} onPage={setPage} canRotate={canEdit} height={600} />

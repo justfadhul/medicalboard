@@ -169,3 +169,19 @@ select pg_temp.logout();
 
 -- not approved closes, deferred goes back to review
 select pg_temp.check((select count(*) from public.sms_outbox where case_id = current_setting('t.case')::uuid and body ~* 'renal|transplant') = 0, 'SMS carry no diagnosis');
+
+-- delete all scanned pages of a document at once
+select pg_temp.login('00000000-0000-0000-0000-0000000000b1');
+select set_config('t.d', public.create_case('{"type":"retirement","name":"Delete Pages Test","gender":"Male","dob":"1970-01-01","employer_id":"1"}')::text, false);
+do $$ declare d record; begin
+  select id, case_id into d from public.case_documents where case_id = current_setting('t.d')::uuid order by sort limit 1;
+  perform public.add_page(d.id, d.case_id || '/' || d.id || '/a.jpg', 10, 10, 0.9, '{"ok":true}');
+  perform public.add_page(d.id, d.case_id || '/' || d.id || '/b.jpg', 10, 10, 0.9, '{"ok":true}');
+  perform set_config('t.doc', d.id::text, false);
+end $$;
+select pg_temp.check(cardinality(public.delete_all_pages(current_setting('t.doc')::uuid)) = 2, 'delete_all_pages returns both file paths');
+select pg_temp.check(not exists (select 1 from public.document_pages where document_id = current_setting('t.doc')::uuid), 'all pages deleted');
+select pg_temp.logout();
+select pg_temp.login('00000000-0000-0000-0000-0000000000c1');
+select pg_temp.expect_error('select public.delete_all_pages((select id from public.case_documents where case_id = (select id from public.cases where stage = ''closed'' limit 1) limit 1))', 'cannot delete pages of a closed case');
+select pg_temp.logout();
