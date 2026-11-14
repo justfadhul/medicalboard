@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import QRCode from "qrcode";
 import { supabaseBrowser } from "@/lib/supabase/client";
@@ -11,49 +11,56 @@ import { CameraCapture, PagesStrip, pageFromBlob, pagesBlocking, type CapturedPa
 export type ScanDoc = { id: string; name: string; status: string };
 type Source = "camera" | "phone" | "scanner";
 
+/** Reads a Code 128 case barcode from a captured page (the batch cover sheet). */
+export async function readCoverBarcode(url: string): Promise<string | null> {
+  try {
+    const { BrowserMultiFormatReader } = await import("@zxing/browser");
+    return (await new BrowserMultiFormatReader().decodeFromImageUrl(url)).getText().trim();
+  } catch { return null; }
+}
+
 export function ScanDialog({ open, onClose, caseId, caseNo, caseName, doc, docs, batch }: {
   open: boolean; onClose: () => void; caseId: string; caseNo: string; caseName: string; doc?: ScanDoc | null; docs: ScanDoc[]; batch?: boolean;
 }) {
   const router = useRouter();
+  const order = docs.filter((d) => d.status !== "not_applicable");
   const [source, setSource] = useState<Source>("camera");
   const [pages, setPages] = useState<CapturedPage[]>([]);
   const [retake, setRetake] = useState<string | null>(null);
   const [err, setErr] = useState("");
+  const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
-  const [assign, setAssign] = useState<Record<string, string>>({}); // page id -> document id (batch)
-  const [cover, setCover] = useState<"unread" | "ok" | "mismatch" | "none">("unread");
+  // Batch: the document being scanned now. Every captured page is tagged with it; pages can be moved afterwards.
+  const [current, setCurrent] = useState(order.find((d) => d.status === "received")?.id ?? order[0]?.id ?? "");
+  const [cover, setCover] = useState<"waiting" | "ok" | "skipped">("waiting");
   const [q, setQ] = useState({ pending: 0, uploading: null as string | null, done: 0, failed: 0, lastError: undefined as string | undefined });
 
   useEffect(() => onQueue((s) => setQ({ ...s, lastError: s.lastError })), []);
-  useEffect(() => { if (!open) { pages.forEach((p) => URL.revokeObjectURL(p.url)); setPages([]); setAssign({}); setCover("unread"); setErr(""); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!open) { pages.forEach((p) => URL.revokeObjectURL(p.url)); setPages([]); setCover("waiting"); setErr(""); setNote(""); } }, [open]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const order = docs.filter((d) => d.status !== "not_applicable");
-  function addPage(p: CapturedPage) {
+  const docName = (id?: string) => order.find((d) => d.id === id)?.name ?? "";
+  const currentIndex = order.findIndex((d) => d.id === current);
+
+  async function addPage(p: CapturedPage) {
+    // Batch: the first page may be the cover sheet. Its barcode files the pile under this case; it is not saved.
+    if (batch && cover === "waiting" && pages.length === 0) {
+      const code = await readCoverBarcode(p.url);
+      if (code) {
+        URL.revokeObjectURL(p.url);
+        if (code === caseNo) { setCover("ok"); setNote(`Cover sheet recognised: ${caseNo}. Now scan ${docName(current)}.`); setErr(""); }
+        else setErr(`That cover sheet is for ${code}, not ${caseNo}. Check the pile.`);
+        return;
+      }
+      setCover("skipped");
+    }
+    const tagged = { ...p, docId: batch ? current : doc?.id };
     setPages((cur) => {
-      if (retake) { const i = cur.findIndex((x) => x.id === retake); if (i >= 0) { const n = [...cur]; URL.revokeObjectURL(n[i]!.url); n[i] = p; setRetake(null); return n; } }
-      return [...cur, p];
+      if (retake) {
+        const i = cur.findIndex((x) => x.id === retake);
+        if (i >= 0) { const n = [...cur]; URL.revokeObjectURL(n[i]!.url); n[i] = { ...tagged, docId: n[i]!.docId }; setRetake(null); return n; }
+      }
+      return [...cur, tagged];
     });
-  }
-
-  // Batch: read the cover sheet barcode (Code 128) with ZXing, then split pages across documents in checklist order.
-  async function readCover() {
-    if (!pages.length) return;
-    try {
-      const { BrowserMultiFormatReader } = await import("@zxing/browser");
-      const res = await new BrowserMultiFormatReader().decodeFromImageUrl(pages[0]!.url);
-      const text = res.getText().trim();
-      if (text !== caseNo) { setCover("mismatch"); setErr(`The cover sheet is for ${text}, not ${caseNo}. Check the pile.`); return; }
-      const rest = pages.slice(1);
-      URL.revokeObjectURL(pages[0]!.url);
-      setPages(rest); setCover("ok"); setErr("");
-      distribute(rest);
-    } catch { setCover("none"); setErr("No barcode found on the first page. Scan the cover sheet first, or assign pages by hand below."); distribute(pages); }
-  }
-  function distribute(list: CapturedPage[]) {
-    const targets = order.filter((d) => d.status === "received").length ? order.filter((d) => d.status === "received") : order;
-    const a: Record<string, string> = {};
-    list.forEach((p, i) => (a[p.id] = targets[Math.min(i, targets.length - 1)]!.id));
-    setAssign(a);
   }
 
   async function save() {
@@ -61,22 +68,33 @@ export function ScanDialog({ open, onClose, caseId, caseNo, caseName, doc, docs,
     const bad = pagesBlocking(pages);
     if (bad.length) return setErr(`Retake ${bad.length === 1 ? "the marked page" : bad.length + " marked pages"}, or give a reason to keep ${bad.length === 1 ? "it" : "them"}.`);
     if (!pages.length) return setErr("Capture at least one page.");
-    if (batch && pages.some((p) => !assign[p.id])) return setErr("Assign every page to a document.");
+    if (pages.some((p) => !p.docId)) return setErr("Choose the document for every page.");
     setSaving(true);
     try {
       await enqueue(pages.map((p) => ({
-        caseId, documentId: batch ? assign[p.id]! : doc!.id, blob: p.blob, width: p.width, height: p.height, score: p.quality.score,
+        caseId, documentId: p.docId!, blob: p.blob, width: p.width, height: p.height, score: p.quality.score,
         quality: { ...p.quality }, keepReason: p.keepReason || null, ext: "jpg",
       })));
-      setPages([]); setAssign({});
+      setPages([]);
       router.refresh();
       onClose();
     } catch (e) { setErr(errMsg(e)); } finally { setSaving(false); }
   }
 
+  const counts = order.map((d) => ({ d, n: pages.filter((p) => p.docId === d.id).length })).filter((x) => x.n);
+  const docPicker = batch && (
+    <div className="row" style={{ gap: 6, flexWrap: "nowrap" }}>
+      <label className="sr-only" htmlFor="batch-current">Document being scanned</label>
+      <select id="batch-current" value={current} onChange={(e) => setCurrent(e.target.value)} style={{ height: 34, minWidth: 0, flex: 1 }}>
+        {order.map((d, i) => <option key={d.id} value={d.id}>{i + 1}. {d.name} ({pages.filter((p) => p.docId === d.id).length})</option>)}
+      </select>
+      <button className="btn sm" disabled={currentIndex >= order.length - 1} onClick={() => setCurrent(order[currentIndex + 1]!.id)}>Next document →</button>
+    </div>
+  );
+
   const title = batch ? "Batch scan" : `Scan: ${doc?.name ?? ""}`;
   return (
-    <Modal open={open} onClose={onClose} title={title} sub={`${caseName} · ${caseNo}`} width={860}
+    <Modal open={open} onClose={onClose} title={title} sub={`${caseName} · ${caseNo}`} width={980}
       footer={<>
         {q.pending > 0 && <span className="muted t12" role="status" style={{ marginRight: "auto" }}>Uploading: {q.pending} page(s) in the queue{q.lastError ? ` · retrying (${q.lastError})` : ""}</span>}
         {q.failed > 0 && <button className="btn sm" onClick={() => retryFailed()}>Retry failed uploads</button>}
@@ -90,53 +108,27 @@ export function ScanDialog({ open, onClose, caseId, caseNo, caseName, doc, docs,
             {s === "camera" ? "Camera" : s === "phone" ? "Scan with phone" : "Scanner"}</button>
         ))}
       </div>
-      {batch && <p className="muted t12">Scan the whole pile behind its cover sheet. The barcode on the sheet files the pages under this case, one document after another.</p>}
-      {source === "camera" && <CameraCapture onPage={addPage} hint={retake ? "Retaking the selected page" : batch ? `Page ${pages.length + 1} of the pile` : `Page ${pages.length + 1} of ${doc?.name}`} />}
+      {batch && source !== "phone" && (
+        <div className="stack" style={{ gap: 6 }}>
+          <p className="muted t12">Scan the pile document by document. Choose the document you are scanning (or press <b>Next document</b> when you move on); every page is filed under the document chosen when it was captured. If the first page is the cover sheet, its barcode is checked and it is not saved.</p>
+          {docPicker}
+        </div>
+      )}
+      {source === "camera" && (
+        <CameraCapture onPage={addPage} pages={pages} header={docPicker || <b>{doc?.name}</b>}
+          hint={retake ? "Retaking the selected page" : batch ? `${docName(current)} · page ${pages.filter((p) => p.docId === current).length + 1}` : `Page ${pages.length + 1} of ${doc?.name}`} />
+      )}
       {source === "phone" && <PhonePair caseId={caseId} doc={doc} batch={!!batch} />}
-      {source === "scanner" && <BridgeSource onPages={(ps) => ps.forEach(addPage)} />}
+      {source === "scanner" && <BridgeSource onPages={(ps) => ps.forEach((p) => void addPage(p))} />}
+      {note && <p className="okbox t12" role="status">{note}</p>}
       {source !== "phone" && (
         <>
-          <PagesStrip pages={pages} setPages={setPages} retake={retake} onRetake={setRetake} />
-          {batch && pages.length > 0 && (
-            <div className="stack" style={{ gap: 8 }}>
-              <div className="row">
-                <button className="btn sm" onClick={readCover}>Read cover sheet and split</button>
-                {cover === "ok" && <span className="pill p-green"><span className="dot" />Cover sheet matches {caseNo}</span>}
-                {cover === "none" && <button className="btn sm" onClick={() => distribute(pages)}>Split in checklist order</button>}
-              </div>
-              {Object.keys(assign).length > 0 && <BatchBuckets pages={pages} docs={order} assign={assign} setAssign={setAssign} />}
-            </div>
-          )}
+          {batch && counts.length > 0 && <p className="t12">{counts.map((x) => `${x.d.name}: ${x.n} page${x.n === 1 ? "" : "s"}`).join(" · ")}</p>}
+          <PagesStrip pages={pages} setPages={setPages} retake={retake} onRetake={setRetake} docs={batch ? order : undefined} />
         </>
       )}
       {err && <p className="err" role="alert">{err}</p>}
     </Modal>
-  );
-}
-
-function BatchBuckets({ pages, docs, assign, setAssign }: { pages: CapturedPage[]; docs: ScanDoc[]; assign: Record<string, string>; setAssign: (a: Record<string, string>) => void }) {
-  const drag = useRef<string | null>(null);
-  return (
-    <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(200px, 1fr))", gap: 8 }}>
-      {docs.map((d) => (
-        <section key={d.id} aria-label={d.name} className="kcol" style={{ flex: "none" }} onDragOver={(e) => e.preventDefault()}
-          onDrop={() => { if (drag.current) setAssign({ ...assign, [drag.current]: d.id }); drag.current = null; }}>
-          <b className="t12">{d.name}</b>
-          <div className="row" style={{ gap: 4 }}>
-            {pages.filter((p) => assign[p.id] === d.id).map((p) => (
-              <span key={p.id} draggable onDragStart={() => (drag.current = p.id)} className="stack" style={{ gap: 2, width: 64 }}>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={p.url} alt={`Page ${pages.indexOf(p) + 1}`} style={{ width: 64, height: 80, objectFit: "cover", borderRadius: 3, border: "1px solid #E2E2E6" }} />
-                <select aria-label={`Move page ${pages.indexOf(p) + 1} to`} value={d.id} onChange={(e) => setAssign({ ...assign, [p.id]: e.target.value })} style={{ height: 24, fontSize: 11, padding: "0 2px" }}>
-                  {docs.map((x) => <option key={x.id} value={x.id}>{x.name}</option>)}
-                </select>
-              </span>
-            ))}
-          </div>
-          {!pages.some((p) => assign[p.id] === d.id) && <span className="muted t12">No pages</span>}
-        </section>
-      ))}
-    </div>
   );
 }
 

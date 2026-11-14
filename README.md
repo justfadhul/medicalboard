@@ -2,7 +2,7 @@
 
 Web application for the **Uganda Medical Board Secretariat** (Ministry of Health) handling **referral for medical treatment abroad** and **retirement on medical grounds**: intake with in-app scanning, Secretariat review, Board sittings and minutes, letters from the Ministry's Word templates, signing, collection with an SMS code, and proof of receipt by the receiving office.
 
-- **Stack:** Next.js 16 (App Router, TypeScript), Tailwind CSS 4, Radix UI · Supabase (Postgres, Auth with TOTP MFA, Storage, RLS, Realtime, Edge Functions) · `docxtemplater` + `pizzip` (Word) · `pdf-lib` (PDF) · OpenCV.js (page detection, in a Web Worker) · ZXing (cover-sheet barcodes).
+- **Stack:** Next.js 16 (App Router, TypeScript), Tailwind CSS 4, Radix UI · Supabase (Postgres, Auth with TOTP MFA, Storage, RLS, Realtime, Edge Functions) · `docxtemplater` + `pizzip` (Word) · `pdf-lib` (PDF) · built-in page detection (no external library) · ZXing (cover-sheet barcodes).
 - **Docs:** [`docs/DATA_PROTECTION.md`](docs/DATA_PROTECTION.md) · [`docs/RUNBOOK.md`](docs/RUNBOOK.md) · [`scan-bridge/README.md`](scan-bridge/README.md)
 
 ## Roles
@@ -117,10 +117,10 @@ Import the GitHub repository in Vercel, set the environment variables above (Pro
 
 All scanning happens in the app (Documents tab → **Scan**, or **Batch scan**):
 
-- **Camera** (`getUserMedia`, rear camera on phones, any webcam or document camera on desktops): live page-edge detection with OpenCV.js in a Web Worker, auto-crop and perspective correction, optional black-and-white filter, auto-capture when the page is steady, manual capture. Each page is checked for blur (variance of the Laplacian), too dark/too bright, and cut-off edges; a failed page must be retaken or kept with a reason. Pages strip: reorder (drag or arrows), delete, retake.
+- **Camera** (`getUserMedia`, rear camera on phones, any webcam or document camera on desktops): live page-edge detection built into the app (no download, works offline): the page is outlined with corner markers, the background is cropped away and the page straightened, with an auto-levels "Enhance" and an optional black-and-white filter. Plain on-screen guidance (move closer, fit the page, hold steady, too dark, torch) and auto-capture with a progress ring when the page is steady; manual capture too. On phones the camera is full screen. Each page is checked for blur (variance of the Laplacian), too dark/too bright, and cut-off edges; a failed page must be retaken or kept with a reason. Pages strip: reorder (drag or arrows), delete, retake.
 - **Scan with phone:** a QR with a 10-minute single-use pairing token; the signed-in phone opens the same capture screen; pages appear on the desktop live (Realtime).
 - **Scanner:** network scanners (eSCL/AirScan) and a scan-to-folder drop folder through the optional local [scan bridge](scan-bridge/README.md) (Windows install steps there).
-- **Batch with cover sheet:** print the cover sheet (Code 128 case barcode and scan order), scan the pile, the app reads the barcode (ZXing), checks the case number and splits pages across the checklist; drag pages between documents before saving.
+- **Batch with cover sheet:** print the cover sheet (Code 128 case barcode and scan order). In Batch scan, choose the document you are scanning (or press **Next document**); every page is filed under the document chosen when it was captured, and can be moved to another document before saving. If the first page is the cover sheet, its barcode (ZXing) is checked against the case and the sheet is not saved.
 - Pages are compressed JPEGs, queued in **IndexedDB** and uploaded with retries to the private `scans/{case_id}/{document_id}/` bucket; a combined PDF per document is built with `pdf-lib`.
 
 ## Word templates
