@@ -1,0 +1,6 @@
+[
+  { "email": "admin@example.org", "name": "System administrator", "role": "admin" },
+  { "email": "registry@example.org", "name": "Registry officer", "role": "registry" },
+  { "email": "reviewer@example.org", "name": "Secretariat reviewer", "role": "secretariat" },
+  { "email": "commissioner@example.org", "name": "Commissioner Clinical Services", "role": "commissioner" }
+]

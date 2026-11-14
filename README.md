@@ -99,7 +99,15 @@ Local emails (invites, sign-in links) appear in Inbucket at http://localhost:543
    $$);
    ```
    Re-run `supabase db push` after enabling `pg_cron` so the retention and sittings jobs are scheduled (or run the `do $$ … cron.schedule …` block from `20261113000003_rls.sql`).
-7. Bootstrap the first admin (`npm run bootstrap:admin` with the cloud URL and service-role key). The admin invites everyone else from **Users and roles**.
+7. Create the users. Either bootstrap just the first admin (`npm run bootstrap:admin`) and let them invite everyone from **Users and roles**, or create everyone at once from a list:
+   ```bash
+   cp scripts/users.example.json scripts/users.local.json
+   ```
+   Edit `scripts/users.local.json` (email, name, role: `registry`, `secretariat`, `commissioner` or `admin`; it is git-ignored because it holds staff emails), then:
+   ```bash
+   npm run bootstrap:users
+   ```
+   It is safe to re-run: existing users keep their accounts and get the listed role. Add `-- --invite` to email invitations to new users; without it they sign in from the login page.
 
 ## Deploy (Vercel)
 

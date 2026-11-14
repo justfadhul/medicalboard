@@ -12,7 +12,8 @@
     "test:sql": "bash supabase/tests/run-local.sh",
     "e2e": "playwright test --trace off",
     "bootstrap:admin": "node --experimental-strip-types scripts/bootstrap-admin.ts",
-    "templates": "node --experimental-strip-types scripts/make-templates.ts"
+    "templates": "node --experimental-strip-types scripts/make-templates.ts",
+    "bootstrap:users": "node --experimental-strip-types scripts/bootstrap-users.ts"
   },
   "dependencies": {
     "@radix-ui/react-dialog": "^1.3.1",
