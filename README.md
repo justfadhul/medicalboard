@@ -14,7 +14,9 @@ Web application for the **Uganda Medical Board Secretariat** (Ministry of Health
 | `commissioner` | Read-only: Pipeline, cases, Mentions |
 | `admin` | **Every workspace** above plus Users and roles, Settings, Lists and templates, Audit log |
 
-Roles live in `profiles.role` and are enforced in Postgres (`public.my_role()` / `has_role()`, RLS and `security definer` functions). A role only counts on an MFA-verified (`aal2`) session.
+Roles live in `profiles.role` and are enforced in Postgres (`public.my_role()` / `has_role()`, RLS and `security definer` functions).
+
+**Sign-in:** an emailed link. Two-step verification (TOTP authenticator app) is an admin setting, **Require two-step verification** (`mfa_required`), currently **off**. When on, the database only grants a role to an MFA-verified (`aal2`) session and users are sent to the authenticator screen. Turn it on before real patient data is loaded.
 
 ## Workflow
 
@@ -139,4 +141,4 @@ npm run e2e
 
 - **Unit (Vitest):** routing, minute numbering, sittings, age from date of birth, criteria, cadre mapping, letter wording (no diagnosis in retirement letters), `.docx` rendering, signing-pack PDF, quality checks, SMS adapter.
 - **SQL:** RLS for anon, no-MFA, no-role, registry, secretariat, commissioner, admin and service role; full workflows (government transplant referral and police retirement) to `closed`, undo, letter routing, collection-code hashing and attempts.
-- **E2E (Playwright):** one referral and one retirement case from intake to closed, with Chromium's fake camera stream, the mock SMS provider, magic-link sign-in and TOTP. CI (`.github/workflows/ci.yml`) runs all three against a local Supabase.
+- **E2E (Playwright):** one referral and one retirement case from intake to closed, with Chromium's fake camera stream, the mock SMS provider and magic-link sign-in (TOTP when the setting is on). CI (`.github/workflows/ci.yml`) runs all three against a local Supabase.

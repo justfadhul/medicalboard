@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const next = safeNext(req.nextUrl.searchParams.get("next"));
   if (code) {
     const { error } = await (await supabaseServer()).auth.exchangeCodeForSession(code);
-    if (!error) return NextResponse.redirect(new URL("/mfa?next=" + encodeURIComponent(next), req.url));
+    if (!error) return NextResponse.redirect(new URL(next, req.url));
   }
   return NextResponse.redirect(new URL("/login?error=link", req.url));
 }

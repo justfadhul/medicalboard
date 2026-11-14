@@ -9,6 +9,8 @@ export async function getMe(): Promise<Me> {
   const sb = await supabaseServer();
   const { data: { user } } = await sb.auth.getUser();
   if (!user) redirect("/login");
+  const { data: needsMfa } = await sb.rpc("needs_mfa");
+  if (needsMfa) redirect("/mfa");
   const { data } = await sb.from("profiles").select("id,email,full_name,role,active").eq("id", user.id).single();
   if (!data?.role || !data.active) redirect("/no-access");
   return data as Me;

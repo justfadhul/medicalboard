@@ -11,7 +11,7 @@ export async function guard(...roles: Role[]) {
   const { data: { user } } = await sb.auth.getUser();
   if (!user) return { error: NextResponse.json({ error: "Sign in" }, { status: 401 }) } as const;
   const { data: role } = await sb.rpc("my_role");
-  if (!role) return { error: NextResponse.json({ error: "MFA or role required" }, { status: 403 }) } as const;
+  if (!role) return { error: NextResponse.json({ error: "Role required (or two-step verification)" }, { status: 403 }) } as const;
   if (roles.length && role !== "admin" && !roles.includes(role)) return { error: NextResponse.json({ error: "Not allowed for your role" }, { status: 403 }) } as const;
   return { sb, user, role: role as Role } as const;
 }

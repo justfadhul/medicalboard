@@ -29,11 +29,6 @@ export async function proxy(req: NextRequest) {
   };
   if (!user) return path.startsWith("/api/") ? NextResponse.json({ error: "Sign in" }, { status: 401 }) : redirect("/login");
 
-  // TOTP MFA is required for every role.
-  const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
-  if (aal?.currentLevel !== "aal2" && !path.startsWith("/mfa")) {
-    return path.startsWith("/api/") ? NextResponse.json({ error: "MFA required" }, { status: 401 }) : redirect("/mfa");
-  }
   return res;
 }
 

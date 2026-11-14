@@ -31,11 +31,20 @@ select pg_temp.expect_error('select public.create_case(''{}'')', 'anon cannot cr
 select pg_temp.check(public.verify_lookup('nope') is null, 'anon can call verify_lookup');
 reset role;
 
--- no MFA (aal1): no role, no data
+-- two-step verification required: an aal1 session has no role and no data
+update public.settings set value = 'true' where key = 'mfa_required';
 select pg_temp.login('00000000-0000-0000-0000-00000000000c', 'aal1');
-select pg_temp.check((select count(*) from public.cases) = 0, 'aal1 session sees no cases');
-select pg_temp.expect_error('select public.add_note((select id from public.cases limit 1), ''x'')', 'aal1 session cannot act');
+select pg_temp.check((select count(*) from public.cases) = 0, 'MFA on: aal1 session sees no cases');
+select pg_temp.check(public.needs_mfa(), 'MFA on: aal1 session is sent to the authenticator');
+select pg_temp.expect_error('select public.add_note((select id from public.cases limit 1), ''x'')', 'MFA on: aal1 session cannot act');
 select pg_temp.logout();
+-- not required: the emailed link (aal1) is enough
+update public.settings set value = 'false' where key = 'mfa_required';
+select pg_temp.login('00000000-0000-0000-0000-00000000000c', 'aal1');
+select pg_temp.check((select count(*) from public.cases) > 0, 'MFA off: link-only session works');
+select pg_temp.check(not public.needs_mfa(), 'MFA off: no authenticator step');
+select pg_temp.logout();
+update public.settings set value = 'true' where key = 'mfa_required';
 
 -- user without a role
 select pg_temp.login('00000000-0000-0000-0000-00000000000e');

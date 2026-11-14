@@ -36,9 +36,9 @@ Check the region list again when creating the project (Supabase: *New project �
 
 ## 4. Controls built in
 
-- Row Level Security on every table; roles enforced in the database (`my_role()` requires an active profile **and** an MFA-verified `aal2` session). The browser is never trusted for role checks.
+- Row Level Security on every table; roles enforced in the database (`my_role()` requires an active profile, and an MFA-verified `aal2` session when the **Require two-step verification** setting is on). The browser is never trusted for role checks.
 - Registry sees cases at intake and from signing onwards (collection and receipt), not review findings, extracted fields or flags. The Commissioner is read-only. The public page reads through a narrow `security definer` function.
-- TOTP two-step verification required for every role; sign-in by emailed link; accounts only by admin invitation.
+- Sign-in by emailed link; accounts only by admin invitation. TOTP two-step verification is built in and enforced by the database when the admin setting is on. **It is currently off at the Ministry's request for testing with fictional data. Link-only sign-in means anyone with access to a staff member's mailbox can open case records, so switch it on before real data is loaded.**
 - Append-only audit log (no update/delete grants, enforced by trigger even for the service role); exportable as CSV by admins.
 - Service-role key only on the server (never `NEXT_PUBLIC_`); secrets live in Vercel and Supabase settings; only `.env.example` is committed.
 - Security headers: CSP with `frame-ancestors 'none'`, HSTS, `X-Frame-Options: DENY`, `nosniff`, strict referrer policy, camera limited to this origin.
@@ -53,9 +53,10 @@ Access and correction requests go to the Secretariat. Particulars can be correct
 1. **Registration** of the Ministry (as data controller) with the **Personal Data Protection Office (PDPO)**, NITA-U, including this system as a processing activity.
 2. **Data protection officer's review** of this document, a data protection impact assessment (special personal data, cross-border transfer), and the processor agreements in §3.
 3. **Hosting approval** for storing health data outside Uganda (DPPA s.19), in writing, from the accounting officer, after NITA-U's guidance on government data hosting; or a decision to host in-country (§7).
-4. Confirmation of the open settings marked **"to confirm"** in the app (agenda cut-off, retention period, report-due period, letter addressees).
-5. Approval (or refusal) of the **SMS processor** and, separately, of the **AI processor** (leave AI reading off until then).
-6. A restore test of the backups (see RUNBOOK) and named owners for the admin and DPO roles.
+4. **Two-step verification switched on** (Settings → Require two-step verification), and every user enrolled.
+5. Confirmation of the open settings marked **"to confirm"** in the app (agenda cut-off, retention period, report-due period, letter addressees).
+6. Approval (or refusal) of the **SMS processor** and, separately, of the **AI processor** (leave AI reading off until then).
+7. A restore test of the backups (see RUNBOOK) and named owners for the admin and DPO roles.
 
 ## 7. Moving to in-country hosting
 

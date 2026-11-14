@@ -8,7 +8,7 @@ export async function GET(req: NextRequest) {
   const type = req.nextUrl.searchParams.get("type") as EmailOtpType | null;
   if (tokenHash && type) {
     const { error } = await (await supabaseServer()).auth.verifyOtp({ token_hash: tokenHash, type });
-    if (!error) return NextResponse.redirect(new URL("/mfa", req.url));
+    if (!error) return NextResponse.redirect(new URL("/", req.url));
   }
   return NextResponse.redirect(new URL("/login?error=link", req.url));
 }

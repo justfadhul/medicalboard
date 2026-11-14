@@ -40,7 +40,8 @@ export async function login(browser: Browser, email: string): Promise<Page> {
   const { data, error } = await admin.auth.admin.generateLink({ type: "magiclink", email });
   if (error) throw error;
   await page.goto(`/auth/confirm?token_hash=${data.properties.hashed_token}&type=magiclink`);
-  await page.waitForURL(/\/mfa/);
+  await page.waitForURL((u) => !u.pathname.startsWith("/auth/"));
+  if (!page.url().includes("/mfa")) return page; // two-step verification switched off
   const logs: string[] = [];
   page.on("console", (m) => { if (m.type() === "error") logs.push(m.text()); });
   const keyEl = page.locator("code");
