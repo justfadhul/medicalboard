@@ -102,3 +102,27 @@ describe("misc", () => {
     expect(numberToWords(45250)).toBe("forty-five thousand two hundred and fifty");
   });
 });
+
+describe("age in years, months, weeks and days", () => {
+  const on = new Date("2026-11-14T12:00:00");
+  it("breaks the age down", async () => {
+    const { ageParts, ageText, ageShort, ageAdjective } = await import("@/lib/domain");
+    expect(ageParts("1985-02-11", on)).toMatchObject({ years: 41, months: 9, weeks: 0, days: 3 });
+    expect(ageText("2026-05-06", on)).toBe("6 months, 1 week, 1 day");
+    expect(ageText("2026-10-24", on)).toBe("3 weeks");
+    expect(ageText("2026-11-10", on)).toBe("4 days");
+    expect(ageText("2026-11-14", on)).toBe("newborn");
+    expect(ageText("2025-08-14", on)).toBe("1 year, 3 months");
+    expect(ageShort("1972-03-14", on)).toBe("54 years");
+    expect(ageShort("2025-08-01", on)).toBe("1 year, 3 months, 1 week, 6 days");
+    expect(ageAdjective("1972-03-14", on)).toBe("54-year-old");
+    expect(ageAdjective("2026-05-06", on)).toBe("6-month-old");
+    expect(ageAdjective("2026-10-24", on)).toBe("3-week-old");
+    expect(ageAdjective("2026-11-10", on)).toBe("4-day-old");
+  });
+  it("handles month ends and leap years", async () => {
+    const { ageParts } = await import("@/lib/domain");
+    expect(ageParts("2026-01-31", new Date("2026-02-28T12:00:00"))).toMatchObject({ years: 0, months: 1, weeks: 0, days: 0 });
+    expect(ageParts("2024-02-29", new Date("2026-02-28T12:00:00"))).toMatchObject({ years: 2, months: 0, days: 0 });
+  });
+});

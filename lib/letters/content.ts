@@ -1,5 +1,5 @@
 // Letter wording (house format). Shared by the on-screen preview, the .docx generator and the signing-pack PDF.
-import { ageFrom, letterDate, numberToWords, type Funding, type LetterKind, type Signatory } from "@/lib/domain";
+import { ageAdjective, ageShort, letterDate, numberToWords, type Funding, type LetterKind, type Signatory } from "@/lib/domain";
 
 export type LetterCase = {
   case_no: string; name: string; gender: string; dob: string; type: "retirement" | "referral"; station: string | null;
@@ -29,7 +29,7 @@ const CC = ["Hon. Minister of Health", "Permanent Secretary, Ministry of Health"
 export function letterView(c: LetterCase, l: LetterRow, o: Officers, appUrl: string): LetterView {
   const female = c.gender === "Female";
   const P = female ? { pos: "her", subj: "She", obj: "her", g: "female" } : { pos: "his", subj: "He", obj: "him", g: "male" };
-  const a = ageFrom(c.dob); // always the age from the date of birth
+  const a = ageAdjective(c.dob); // always the age from the date of birth, e.g. "41-year-old", "6-month-old"
   const sitting = c.sitting ? letterDate(c.sitting.sitting_date) : "[sitting date]";
   const diag = (c.diagnosis || "[diagnosis]").toLowerCase();
   const proc = (c.procedure || "[procedure]").toLowerCase();
@@ -56,20 +56,20 @@ export function letterView(c: LetterCase, l: LetterRow, o: Officers, appUrl: str
   const re = `REFERRAL OF ${c.name} FOR ${proc} IN ${country}`.toUpperCase();
   if (l.kind === "intro") {
     return { ...base, to: [receiving, c.receiving_centre ?? "", country.toUpperCase()].filter(Boolean), re,
-      paras: [`This is to introduce to you ${c.name}, a ${a}-year-old ${P.g} diagnosed with ${diag}.`,
+      paras: [`This is to introduce to you ${c.name}, ${/^[aeiou8]|^11-|^18-/i.test(a) ? "an" : "a"} ${a} ${P.g} diagnosed with ${diag}.`,
         `${referring} has recommended ${P.obj} for ${proc}. ${P.subj} will travel with one attendant, ${P.pos} ${accompanying}, over an estimated stay of ${duration}. ${payer} committed to meet the costs related to ${P.pos} travel, treatment and stay.`],
       bold: approval, close: `Any assistance rendered to ${P.obj} will be highly appreciated.`, cc: [...CC, c.name] };
   }
   if (l.kind === "funder") {
     const office = c.funding === "judiciary" ? "The Judiciary" : c.funding === "parliament" ? "Parliament of Uganda" : "Office of the Prime Minister";
     return { ...base, to: [l.addressee, office, "KAMPALA"], re,
-      paras: [`${c.name} is a ${a}-year-old ${P.g} diagnosed with ${diag}. ${referring} has referred ${P.obj} to ${receiving} for ${proc}.`,
+      paras: [`${c.name} is ${/^[aeiou8]|^11-|^18-/i.test(a) ? "an" : "a"} ${a} ${P.g} diagnosed with ${diag}. ${referring} has referred ${P.obj} to ${receiving} for ${proc}.`,
         `The estimated cost of treatment is ${c.cost_figures || "[cost in figures]"} (${costWords}). ${P.subj} will travel with one attendant, ${P.pos} ${accompanying}, and both will require return air tickets and per diem over a ${duration} period.`],
       bold: approval, close: `The purpose of this letter, therefore, is to grant ${P.obj} permission to travel and authority to purchase foreign exchange as mentioned above.`,
       signer: "", signTitle: "MINISTER OF HEALTH" };
   }
   return { ...base, isLetter: false, cc: [], re: `EXTRACT OF THE MINUTES OF THE UGANDA MEDICAL BOARD SITTING OF ${sitting.toUpperCase()}`,
-    paras: [`Minute ${c.minute_no ?? ""}: Presentation and discussion of cases.`, `Name: ${c.name}. Age: ${a} years. Gender: ${c.gender}.`,
+    paras: [`Minute ${c.minute_no ?? ""}: Presentation and discussion of cases.`, `Name: ${c.name}. Age: ${ageShort(c.dob)}. Gender: ${c.gender}.`,
       `Diagnosis: ${c.diagnosis ?? ""}. Reason for referral: ${c.procedure ?? ""}.`, `Referring doctor: ${referring}. Receiving doctor: ${receiving}.`,
       `Cost of treatment: ${c.cost_figures ?? ""}. Source of funding: ${c.funding ?? ""}. Duration of stay: ${duration}. Person accompanying: ${c.accompanying ?? ""}.`],
     bold: `Decision of the Board: ${approval}`, signer: "", signTitle: "", signers2: [o.chair, { name: o.secretary.name, title: "Secretary" }] };

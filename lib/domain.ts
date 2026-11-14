@@ -59,6 +59,51 @@ export function ageFrom(dob: string | Date, on: Date = new Date()): number {
   return a;
 }
 
+export type AgeParts = { years: number; months: number; weeks: number; days: number; totalDays: number };
+
+/** Exact age as calendar years and months, then the remaining days as weeks and days. */
+export function ageParts(dob: string | Date, on: Date = new Date()): AgeParts {
+  const d = typeof dob === "string" ? new Date(dob + (dob.length === 10 ? "T00:00:00" : "")) : dob;
+  const end = new Date(on.getFullYear(), on.getMonth(), on.getDate());
+  const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+  if (end < start) return { years: 0, months: 0, weeks: 0, days: 0, totalDays: 0 };
+  let months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+  const anchorFor = (m: number) => {
+    const y = start.getFullYear() + Math.floor((start.getMonth() + m) / 12), mo = (start.getMonth() + m) % 12;
+    const last = new Date(y, mo + 1, 0).getDate();
+    return new Date(y, mo, Math.min(start.getDate(), last)); // 31 Jan + 1 month = 28/29 Feb
+  };
+  if (anchorFor(months) > end) months--;
+  const rest = Math.round((end.getTime() - anchorFor(months).getTime()) / 86_400_000);
+  return { years: Math.floor(months / 12), months: months % 12, weeks: Math.floor(rest / 7), days: rest % 7,
+    totalDays: Math.round((end.getTime() - start.getTime()) / 86_400_000) };
+}
+
+const plural = (n: number, w: string) => `${n} ${w}${n === 1 ? "" : "s"}`;
+
+/** "41 years, 6 months, 1 week, 2 days"; zero parts are left out ("newborn" on the day of birth). */
+export function ageText(dob: string | Date, on: Date = new Date()): string {
+  const a = ageParts(dob, on);
+  const parts = [a.years && plural(a.years, "year"), a.months && plural(a.months, "month"), a.weeks && plural(a.weeks, "week"), a.days && plural(a.days, "day")].filter(Boolean);
+  return parts.length ? parts.join(", ") : "newborn";
+}
+
+/** Short form for records and minutes: whole years from age 2, otherwise the full breakdown. */
+export function ageShort(dob: string | Date, on: Date = new Date()): string {
+  const a = ageParts(dob, on);
+  return a.years >= 2 ? plural(a.years, "year") : ageText(dob, on);
+}
+
+/** For letters: "41-year-old", "6-month-old", "3-week-old", "5-day-old", or "newborn". */
+export function ageAdjective(dob: string | Date, on: Date = new Date()): string {
+  const a = ageParts(dob, on);
+  if (a.years) return `${a.years}-year-old`;
+  if (a.months) return `${a.months}-month-old`;
+  if (a.weeks) return `${a.weeks}-week-old`;
+  if (a.days) return `${a.days}-day-old`;
+  return "newborn";
+}
+
 /** The Board sits on the second Thursday of each month. */
 export function secondThursday(year: number, month1: number): Date {
   const first = new Date(Date.UTC(year, month1 - 1, 1));

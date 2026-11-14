@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { ageFrom, daysIn, daysLabel, daysTone, FUNDING_LABEL, initials, ROLE_LABEL, shortDate, stageMeta, type Role } from "@/lib/domain";
+import { ageText, daysIn, daysLabel, daysTone, FUNDING_LABEL, initials, ROLE_LABEL, shortDate, stageMeta, type Role } from "@/lib/domain";
 import type { Me } from "@/lib/data";
 import type { Officers } from "@/lib/letters/content";
 import type { CaseBundle } from "@/lib/types";
@@ -68,7 +68,7 @@ export function CaseView({ b, me, initialTab, officers, appUrl, th }: { b: CaseB
 
   const particulars: [string, string][] = [
     ["Case number", c.case_no], ["Type", typeLabel(c.type)], ["Gender", c.gender],
-    ["Date of birth", `${shortDate(c.dob)} (age ${ageFrom(c.dob)})`], ...(c.stated_age != null ? [["Stated age", String(c.stated_age)] as [string, string]] : []),
+    ["Date of birth", `${shortDate(c.dob)} (age ${ageText(c.dob)})`], ...(c.stated_age != null ? [["Stated age", String(c.stated_age)] as [string, string]] : []),
     ["Phone for SMS", c.phone ? `${c.phone}${c.sms_consent ? "" : " (no SMS consent)"}` : "None"],
     ...(c.type === "retirement" ? [["Employer", c.employer?.name ?? ""], ["Place of work", c.station ?? ""]] as [string, string][] : [
       ["Who pays", payer + (c.funding_body ? ` (${c.funding_body})` : "")], ["Procedure", c.procedure ?? ""], ["Country", c.country ?? ""],

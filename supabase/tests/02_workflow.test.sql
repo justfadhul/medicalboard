@@ -20,6 +20,12 @@ select pg_temp.check(public.second_thursday(2026, 12) = '2026-12-10', 'second Th
 select pg_temp.check(public.second_thursday(2027, 1) = '2027-01-14', 'second Thursday of January 2027');
 select pg_temp.check(public.minute_number('2026-12-10', 3) = 'MB/12/2026/Min04(3)', 'minute number format');
 select pg_temp.check(public.age_on('1972-03-14', '2026-11-13') = 54, 'age from date of birth');
+select pg_temp.check(public.age_label('2026-05-06', '2026-11-14') = '6 months', 'infant age in months');
+select pg_temp.check(public.age_label('2026-10-24', '2026-11-14') = '3 weeks', 'infant age in weeks');
+select pg_temp.check(public.age_label('2026-11-10', '2026-11-14') = '4 days', 'newborn age in days');
+select pg_temp.check(public.stated_age_matches('6 months', '2026-05-06', '2026-11-14'), 'stated age in months matches');
+select pg_temp.check(not public.stated_age_matches('1 year', '2026-05-06', '2026-11-14'), 'wrong stated age for an infant is flagged');
+select pg_temp.check(public.stated_age_matches('54', '1972-03-14', '2026-11-13') and not public.stated_age_matches('53', '1972-03-14', '2026-11-13'), 'stated age in years');
 select pg_temp.check(public.words_to_number('Forty-five thousand two hundred and fifty US dollars') = 45250, 'cost in words parsed');
 select pg_temp.check(public.norm_name('Achieng  Mary') = public.norm_name('mary achieng'), 'name order ignored');
 

@@ -85,7 +85,7 @@ export function defaultMemoTemplate(): Uint8Array {
 export function defaultMinutesTemplate(): Uint8Array {
   const hdr = (t: string) => para(run(t, { b: true, u: true }), { jc: "left", keep: true });
   const kv = (k: string, v: string) => [para(run(k, { b: true }), { jc: "left", after: 0 }), para(run(v), { jc: "left", after: 0 })];
-  const partRows = [["Name", "{name}"], ["Age", "{age} years"], ["Gender", "{gender}"], ["Diagnosis", "{diagnosis}"], ["Reason for referral", "{procedure}"],
+  const partRows = [["Name", "{name}"], ["Age", "{age}"], ["Gender", "{gender}"], ["Diagnosis", "{diagnosis}"], ["Reason for referral", "{procedure}"],
     ["Referring doctor", "{referring}"], ["Receiving doctor and centre", "{receiving}"], ["Country", "{country}"], ["Cost of treatment", "{cost}"],
     ["Source of funding", "{funding}"], ["Duration of stay", "{duration}"], ["Person accompanying", "{accompanying}"], ["Decision of the Board", "{decision}"]].map(([k, v]) => kv(k!, v!));
   const retHead = ["S/N", "Minute", "Name", "Employer", "Station", "Age", "Decision"].map((t) => para(run(t, { b: true, size: 9 }), { jc: "left", after: 0 }));

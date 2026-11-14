@@ -2,7 +2,7 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import QRCode from "qrcode";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { ageFrom, FUNDING_LABEL, letterDate, type Funding } from "@/lib/domain";
+import { ageShort, FUNDING_LABEL, letterDate, type Funding } from "@/lib/domain";
 import { defaultLetterTemplate, defaultMemoTemplate, defaultMinutesTemplate, renderDocx } from "./docx";
 import type { LetterView, Memo } from "./content";
 
@@ -48,11 +48,11 @@ export function minutesData(s: { sitting_date: string; venue: string; attendance
     casesMinute: `MB/${mm}/${yyyy}/Min04`,
     hasReferrals: sorted.some((c) => c.type === "referral"), hasRetire: sorted.some((c) => c.type === "retirement"),
     referrals: sorted.filter((c) => c.type === "referral").map((c) => ({
-      minute: c.minute_no ?? "", name: c.name, age: ageFrom(c.dob, d), gender: c.gender, diagnosis: c.diagnosis ?? "", procedure: c.procedure ?? "",
+      minute: c.minute_no ?? "", name: c.name, age: ageShort(c.dob, d), gender: c.gender, diagnosis: c.diagnosis ?? "", procedure: c.procedure ?? "",
       referring: c.referring_doctor ?? "", receiving: [c.receiving_doctor, c.receiving_centre].filter(Boolean).join(", "), country: c.country ?? "",
       cost: c.cost_figures ?? "", funding: c.funding ? FUNDING_LABEL[c.funding] : "", duration: c.duration ?? "", accompanying: c.accompanying ?? "", decision: dec(c.decision) })),
     retire: sorted.filter((c) => c.type === "retirement").map((c) => ({ serial: c.agenda_serial ?? "", minute: c.minute_no ?? "", name: c.name,
-      employer: c.employer?.name ?? "", station: c.station ?? "", age: ageFrom(c.dob, d), decision: dec(c.decision) })),
+      employer: c.employer?.name ?? "", station: c.station ?? "", age: ageShort(c.dob, d), decision: dec(c.decision) })),
     chairName: chair, secName: sec,
   };
 }

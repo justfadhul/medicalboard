@@ -2,7 +2,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { ageFrom, CADRE_LABEL, FUNDING_LABEL, stageMeta, type Cadre, type CaseType, type Funding, type Stage } from "@/lib/domain";
+import { ageText, CADRE_LABEL, FUNDING_LABEL, stageMeta, type Cadre, type CaseType, type Funding, type Stage } from "@/lib/domain";
 import { supabaseBrowser } from "@/lib/supabase/client";
 import { cls, errMsg } from "@/lib/util";
 import { Field, PageHead } from "@/components/ui";
@@ -77,7 +77,7 @@ export function NewCaseForm({ employers, procedures, countries }: { employers: {
     router.push(`/cases/${data}?tab=documents&created=1`);
   }
 
-  const age = d.dob ? ageFrom(d.dob) : null;
+  const age = d.dob ? ageText(d.dob) : null;
   return (
     <div className="stack" style={{ gap: 14, maxWidth: 920 }}>
       <PageHead title="New case" sub="Record the applicant and confirm which documents were handed in. You scan them on the next screen." />
@@ -93,7 +93,7 @@ export function NewCaseForm({ employers, procedures, countries }: { employers: {
           <Field label="Full name"><input value={d.name} onChange={(e) => set("name", e.target.value)} placeholder="As on the ID card" autoComplete="off" /></Field>
           <Field label="Gender"><select value={d.gender} onChange={(e) => set("gender", e.target.value)}><option>Female</option><option>Male</option></select></Field>
           <Field label="Date of birth"><input type="date" value={d.dob} max={new Date().toISOString().slice(0, 10)} onChange={(e) => set("dob", e.target.value)} /></Field>
-          <div className="stack" style={{ gap: 6 }}><span className="label">Age from date of birth</span><span style={{ fontWeight: 600, lineHeight: "36px" }}>{age ?? "—"}{age !== null && " years"}</span></div>
+          <div className="stack" style={{ gap: 6 }}><span className="label">Age from date of birth</span><span style={{ fontWeight: 600, lineHeight: "36px" }}>{age ?? "—"}</span></div>
           <Field label="Age stated on the form (optional)"><input inputMode="numeric" value={d.stated_age} onChange={(e) => set("stated_age", e.target.value.replace(/\D/g, ""))} /></Field>
           <Field label="Phone for SMS updates"><input value={d.phone} onChange={(e) => set("phone", e.target.value)} placeholder="Patient or next of kin, e.g. 07XX XXX XXX" inputMode="tel" /></Field>
         </div>
